@@ -5,7 +5,7 @@ on:
   push:
     branches:
       - main
-      - 'feature/*' # السيستم كاتبها كدا عشان لقط الـ wildcards للبرانشات
+      - 'feature/*'
 
 env:
   MONGO_URI: mongodb+srv://supercluster.d83jj.mongodb.net/superData
@@ -13,6 +13,7 @@ env:
   MONGO_PASSWORD: ${{ secrets.MONGO_PASSWORD }}
 
 jobs:
+  # 1️⃣ الـ Job الأولى: Unit Testing
   unit-testing:
     name: Unit Testing
     runs-on: ubuntu-latest
@@ -32,8 +33,35 @@ jobs:
         run: npm test
 
       - name: Archive Test Result
-        if: always()
+        if: always() # بتشتغل دايماً حتى لو الـ Tests فشلت
         uses: actions/upload-artifact@v4
         with:
           name: Mocha-Test-Result
           path: test-results.xml
+
+  # 2️⃣ الـ Job الثانية: Code Coverage (بتشتغل بالتوازي)
+  code-coverage:
+    name: Code Coverage
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup NodeJS Version
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18 # طالب إصدار 18 هنا بالذات
+
+      - name: Install Dependencies
+        run: npm install
+
+      - name: Run Code Coverage
+        continue-on-error: true # لو فشلت، الـ Job والـ Pipeline بيكملوا عادي ومبيجبوش إيرور أحمر
+        run: npm run coverage
+
+      - name: Upload Code Coverage Report
+        uses: actions/upload-artifact@v4
+        with:
+          name: Code-Coverage-Result
+          path: coverage
+          retention-days: 5 # الاحتفاظ بالملف لمدة 5 أيام بس
